@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	_ "crypto/sha1"
 	_ "crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -177,13 +178,13 @@ func (ctx *SigningContext) ConstructSignature(el *etree.Element, enveloped bool)
 		return nil, err
 	}
 
-	certs := [][]byte{cert}
-	if cs, ok := ctx.KeyStore.(X509ChainStore); ok {
-		certs, err = cs.GetChain()
-		if err != nil {
-			return nil, err
-		}
-	}
+	// certs := [][]byte{cert}
+	// if cs, ok := ctx.KeyStore.(X509ChainStore); ok {
+	// 	certs, err = cs.GetChain()
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 
 	rawSignature, err := rsa.SignPKCS1v15(rand.Reader, key, ctx.Hash, digest)
 	if err != nil {
@@ -195,9 +196,19 @@ func (ctx *SigningContext) ConstructSignature(el *etree.Element, enveloped bool)
 
 	keyInfo := ctx.createNamespacedElement(sig, KeyInfoTag)
 	x509Data := ctx.createNamespacedElement(keyInfo, X509DataTag)
-	for _, cert := range certs {
+	x509Certs, err := x509.ParseCertificates(cert)
+	if err != nil {
+		return nil, err
+	}
+	for _, cert := range x509Certs {
+
 		x509Certificate := ctx.createNamespacedElement(x509Data, X509CertificateTag)
-		x509Certificate.SetText(base64.StdEncoding.EncodeToString(cert))
+		sub := cert.Subject.String()
+		if sub != "" {
+			x509Subject := ctx.createNamespacedElement(x509Data, X509SubjectNameTag)
+			x509Subject.SetText(sub)
+		}
+		x509Certificate.SetText(base64.StdEncoding.EncodeToString(cert.Raw))
 	}
 
 	return sig, nil

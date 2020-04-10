@@ -21,6 +21,7 @@ const (
 	SignatureValueTag         = "SignatureValue"
 	KeyInfoTag                = "KeyInfo"
 	X509DataTag               = "X509Data"
+	X509SubjectNameTag        = "X509SubjectName"
 	X509CertificateTag        = "X509Certificate"
 	InclusiveNamespacesTag    = "InclusiveNamespaces"
 )
