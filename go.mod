@@ -1,4 +1,4 @@
-module gitlab.com/joice/goxmldsig
+module gitlab.com/moolekkari/goxmldsig
 
 go 1.13
 
