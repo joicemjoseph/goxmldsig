@@ -23,16 +23,18 @@ var (
 	ErrMissingSignature = errors.New("Missing signature referencing the top-level element")
 )
 
+// ValidationContext is a base structure for validation.
 type ValidationContext struct {
 	CertificateStore X509CertificateStore
-	IdAttribute      string
+	IDAttribute      string
 	Clock            *Clock
 }
 
+// NewDefaultValidationContext will create a new context for validation.
 func NewDefaultValidationContext(certificateStore X509CertificateStore) *ValidationContext {
 	return &ValidationContext{
 		CertificateStore: certificateStore,
-		IdAttribute:      DefaultIdAttr,
+		IDAttribute:      DefaultIDAttr,
 	}
 }
 
@@ -54,9 +56,8 @@ func inNamespace(el *etree.Element, ns string) bool {
 func childPath(space, tag string) string {
 	if space == "" {
 		return "./" + tag
-	} else {
-		return "./" + space + ":" + tag
 	}
+	return "./" + space + ":" + tag
 }
 
 func mapPathToElement(tree, el *etree.Element) []int {
@@ -128,12 +129,12 @@ func (ctx *ValidationContext) transform(
 		algo := transform.Algorithm
 
 		switch AlgorithmID(algo) {
-		case EnvelopedSignatureAltorithmId:
+		case EnvelopedSignatureAltorithmID:
 			if !removeElementAtPath(el, signaturePath) {
 				return nil, nil, errors.New("Error applying canonicalization transform: Signature not found")
 			}
 
-		case CanonicalXML10ExclusiveAlgorithmId:
+		case CanonicalXML10ExclusiveAlgorithmID:
 			var prefixList string
 			if transform.InclusiveNamespaces != nil {
 				prefixList = transform.InclusiveNamespaces.PrefixList
@@ -141,13 +142,13 @@ func (ctx *ValidationContext) transform(
 
 			canonicalizer = MakeC14N10ExclusiveCanonicalizerWithPrefixList(prefixList)
 
-		case CanonicalXML11AlgorithmId:
+		case CanonicalXML11AlgorithmID:
 			canonicalizer = MakeC14N11Canonicalizer()
 
-		case CanonicalXML10RecAlgorithmId:
+		case CanonicalXML10RecAlgorithmID:
 			canonicalizer = MakeC14N10RecCanonicalizer()
 
-		case CanonicalXML10CommentAlgorithmId:
+		case CanonicalXML10CommentAlgorithmID:
 			canonicalizer = MakeC14N10CommentCanonicalizer()
 
 		default:
@@ -162,15 +163,15 @@ func (ctx *ValidationContext) transform(
 	return el, canonicalizer, nil
 }
 
-func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId string, canonicalizer Canonicalizer) ([]byte, error) {
+func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmID string, canonicalizer Canonicalizer) ([]byte, error) {
 	data, err := canonicalizer.Canonicalize(el)
 	if err != nil {
 		return nil, err
 	}
 
-	digestAlgorithm, ok := digestAlgorithmsByIdentifier[digestAlgorithmId]
+	digestAlgorithm, ok := digestAlgorithmsByIdentifier[digestAlgorithmID]
 	if !ok {
-		return nil, errors.New("Unknown digest algorithm: " + digestAlgorithmId)
+		return nil, errors.New("Unknown digest algorithm: " + digestAlgorithmID)
 	}
 
 	hash := digestAlgorithm.New()
@@ -182,7 +183,7 @@ func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId string
 	return hash.Sum(nil), nil
 }
 
-func (ctx *ValidationContext) verifySignedInfo(sig *types.Signature, canonicalizer Canonicalizer, signatureMethodId string, cert *x509.Certificate, decodedSignature []byte) error {
+func (ctx *ValidationContext) verifySignedInfo(sig *types.Signature, canonicalizer Canonicalizer, signatureMethodID string, cert *x509.Certificate, decodedSignature []byte) error {
 	signatureElement := sig.UnderlyingElement()
 
 	nsCtx, err := etreeutils.NSBuildParentContext(signatureElement)
@@ -205,9 +206,9 @@ func (ctx *ValidationContext) verifySignedInfo(sig *types.Signature, canonicaliz
 		return err
 	}
 
-	signatureAlgorithm, ok := signatureMethodsByIdentifier[signatureMethodId]
+	signatureAlgorithm, ok := signatureMethodsByIdentifier[signatureMethodID]
 	if !ok {
-		return errors.New("Unknown signature method: " + signatureMethodId)
+		return errors.New("Unknown signature method: " + signatureMethodID)
 	}
 
 	hash := signatureAlgorithm.New()
@@ -233,7 +234,7 @@ func (ctx *ValidationContext) verifySignedInfo(sig *types.Signature, canonicaliz
 }
 
 func (ctx *ValidationContext) validateSignature(el *etree.Element, sig *types.Signature, cert *x509.Certificate) (*etree.Element, error) {
-	idAttr := el.SelectAttr(ctx.IdAttribute)
+	idAttr := el.SelectAttr(ctx.IDAttribute)
 	if idAttr == nil || idAttr.Value == "" {
 		return nil, errors.New("Missing ID attribute")
 	}
@@ -298,7 +299,7 @@ func contains(roots []*x509.Certificate, cert *x509.Certificate) bool {
 
 // findSignature searches for a Signature element referencing the passed root element.
 func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature, error) {
-	idAttr := el.ChildElements()[0].SelectAttr(ctx.IdAttribute)
+	idAttr := el.ChildElements()[0].SelectAttr(ctx.IDAttribute)
 	if idAttr == nil || idAttr.Value == "" {
 		return nil, errors.New("Missing ID attribute")
 	}
@@ -330,7 +331,7 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 				var canonicalSignedInfo *etree.Element
 
 				switch AlgorithmID(c14NAlgorithm) {
-				case CanonicalXML10ExclusiveAlgorithmId:
+				case CanonicalXML10ExclusiveAlgorithmID:
 					err := etreeutils.TransformExcC14n(detachedSignedInfo, "")
 					if err != nil {
 						return err
@@ -342,13 +343,13 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 					// removing of elements below.
 					canonicalSignedInfo = detachedSignedInfo
 
-				case CanonicalXML11AlgorithmId:
+				case CanonicalXML11AlgorithmID:
 					canonicalSignedInfo = canonicalPrep(detachedSignedInfo, map[string]struct{}{})
 
-				case CanonicalXML10RecAlgorithmId:
+				case CanonicalXML10RecAlgorithmID:
 					canonicalSignedInfo = canonicalPrep(detachedSignedInfo, map[string]struct{}{})
 
-				case CanonicalXML10CommentAlgorithmId:
+				case CanonicalXML10CommentAlgorithmID:
 					canonicalSignedInfo = canonicalPrep(detachedSignedInfo, map[string]struct{}{})
 
 				default:

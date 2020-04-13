@@ -36,7 +36,7 @@ func (c *c14N10ExclusiveCanonicalizer) Canonicalize(el *etree.Element) ([]byte, 
 }
 
 func (c *c14N10ExclusiveCanonicalizer) Algorithm() AlgorithmID {
-	return CanonicalXML10ExclusiveAlgorithmId
+	return CanonicalXML10ExclusiveAlgorithmID
 }
 
 type c14N11Canonicalizer struct{}
@@ -53,7 +53,7 @@ func (c *c14N11Canonicalizer) Canonicalize(el *etree.Element) ([]byte, error) {
 }
 
 func (c *c14N11Canonicalizer) Algorithm() AlgorithmID {
-	return CanonicalXML11AlgorithmId
+	return CanonicalXML11AlgorithmID
 }
 
 type c14N10RecCanonicalizer struct{}
@@ -70,7 +70,7 @@ func (c *c14N10RecCanonicalizer) Canonicalize(el *etree.Element) ([]byte, error)
 }
 
 func (c *c14N10RecCanonicalizer) Algorithm() AlgorithmID {
-	return CanonicalXML10RecAlgorithmId
+	return CanonicalXML10RecAlgorithmID
 }
 
 type c14N10CommentCanonicalizer struct{}
@@ -87,7 +87,7 @@ func (c *c14N10CommentCanonicalizer) Canonicalize(el *etree.Element) ([]byte, er
 }
 
 func (c *c14N10CommentCanonicalizer) Algorithm() AlgorithmID {
-	return CanonicalXML10CommentAlgorithmId
+	return CanonicalXML10CommentAlgorithmID
 }
 
 func composeAttr(space, key string) string {

@@ -3,8 +3,12 @@ package dsig
 import "crypto"
 
 const (
+	// DefaultPrefix for generating signs
 	DefaultPrefix = "ds"
-	Namespace     = "http://www.w3.org/2000/09/xmldsig#"
+	// EmptyPrefix for generating empty prefixes, especially for KYC.
+	EmptyPrefix = ""
+	// Namespace of signature.
+	Namespace = "http://www.w3.org/2000/09/xmldsig#"
 )
 
 // Tags
@@ -27,12 +31,19 @@ const (
 )
 
 const (
-	AlgorithmAttr  = "Algorithm"
-	URIAttr        = "URI"
-	DefaultIdAttr  = "ID"
+	// AlgorithmAttr is AlgorithmAttribute.
+	AlgorithmAttr = "Algorithm"
+	// URIAttr is URIAttribute.
+	URIAttr = "URI"
+	// KYCIDAttr is DefaultIdAttribute.
+	KYCIDAttr = "Id"
+	// DefaultIDAttr is DefaultIDAttribute.
+	DefaultIDAttr = "ID"
+	// PrefixListAttr is PrefixListAttribute.
 	PrefixListAttr = "PrefixList"
 )
 
+// AlgorithmID as custom type out of string.
 type AlgorithmID string
 
 func (id AlgorithmID) String() string {
@@ -40,21 +51,24 @@ func (id AlgorithmID) String() string {
 }
 
 const (
-	RSASHA1SignatureMethod   = "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+	// RSASHA1SignatureMethod is a signature method.
+	RSASHA1SignatureMethod = "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+	// RSASHA256SignatureMethod is a signature method
 	RSASHA256SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+	// RSASHA512SignatureMethod is a signature method
 	RSASHA512SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512"
 )
 
 //Well-known signature algorithms
 const (
-	// Supported canonicalization algorithms
-	CanonicalXML10ExclusiveAlgorithmId AlgorithmID = "http://www.w3.org/2001/10/xml-exc-c14n#"
-	CanonicalXML11AlgorithmId          AlgorithmID = "http://www.w3.org/2006/12/xml-c14n11"
+	// Supported canonicalization algorithms.
+	CanonicalXML10ExclusiveAlgorithmID AlgorithmID = "http://www.w3.org/2001/10/xml-exc-c14n#"
+	CanonicalXML11AlgorithmID          AlgorithmID = "http://www.w3.org/2006/12/xml-c14n11"
 
-	CanonicalXML10RecAlgorithmId     AlgorithmID = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
-	CanonicalXML10CommentAlgorithmId AlgorithmID = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"
+	CanonicalXML10RecAlgorithmID     AlgorithmID = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+	CanonicalXML10CommentAlgorithmID AlgorithmID = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"
 
-	EnvelopedSignatureAltorithmId AlgorithmID = "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
+	EnvelopedSignatureAltorithmID AlgorithmID = "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
 )
 
 var digestAlgorithmIdentifiers = map[crypto.Hash]string{

@@ -24,30 +24,36 @@ func (c *Clock) getWrapped() clockwork.Clock {
 	return c.wrapped
 }
 
+// After method to chain execution chain.
 func (c *Clock) After(d time.Duration) <-chan time.Time {
 	return c.getWrapped().After(d)
 }
 
+// Sleep for duration 'd'.
 func (c *Clock) Sleep(d time.Duration) {
 	c.getWrapped().Sleep(d)
 }
 
+// Now returns momentary time object.
 func (c *Clock) Now() time.Time {
 	return c.getWrapped().Now()
 }
 
+// NewRealClock will create new clock object.s
 func NewRealClock() *Clock {
 	return &Clock{
 		wrapped: clockwork.NewRealClock(),
 	}
 }
 
+// NewFakeClock for testing purpose.
 func NewFakeClock(wrapped clockwork.Clock) *Clock {
 	return &Clock{
 		wrapped: wrapped,
 	}
 }
 
+// NewFakeClockAt for testing for picking a particular time point.
 func NewFakeClockAt(t time.Time) *Clock {
 	return &Clock{
 		wrapped: clockwork.NewFakeClockAt(t),

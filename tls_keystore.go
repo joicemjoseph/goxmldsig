@@ -3,6 +3,7 @@ package dsig
 import (
 	"crypto/rsa"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 )
 
@@ -17,7 +18,7 @@ var (
 type TLSCertKeyStore tls.Certificate
 
 //GetKeyPair implements X509KeyStore using the underlying tls.Certificate
-func (d TLSCertKeyStore) GetKeyPair() (*rsa.PrivateKey, []byte, error) {
+func (d TLSCertKeyStore) GetKeyPair() (*rsa.PrivateKey, *x509.Certificate, error) {
 	pk, ok := d.PrivateKey.(*rsa.PrivateKey)
 
 	if !ok {
@@ -28,12 +29,24 @@ func (d TLSCertKeyStore) GetKeyPair() (*rsa.PrivateKey, []byte, error) {
 		return nil, nil, ErrMissingCertificates
 	}
 
-	crt := d.Certificate[0]
+	crt, err := x509.ParseCertificate(d.Certificate[0])
+	if err != nil {
+		return nil, nil, ErrMissingCertificates
+	}
 
 	return pk, crt, nil
 }
 
 //GetChain impliments X509ChainStore using the underlying tls.Certificate
-func (d TLSCertKeyStore) GetChain() ([][]byte, error) {
-	return d.Certificate, nil
+func (d TLSCertKeyStore) GetChain() ([]*x509.Certificate, error) {
+	certs := []*x509.Certificate{}
+	for _, cert := range d.Certificate {
+		c, err := x509.ParseCertificate(cert)
+		if err != nil {
+			continue
+		}
+		certs = append(certs, c)
+	}
+
+	return certs, nil
 }

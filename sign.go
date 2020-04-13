@@ -4,9 +4,10 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+
+	// implimenting sha1 and sha256.
 	_ "crypto/sha1"
 	_ "crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -15,24 +16,38 @@ import (
 	"github.com/russellhaering/goxmldsig/etreeutils"
 )
 
+// SigningContext is a base structure for signing.
 type SigningContext struct {
 	Hash          crypto.Hash
 	KeyStore      X509KeyStore
-	IdAttribute   string
+	IDAttribute   string
 	Prefix        string
 	Canonicalizer Canonicalizer
 }
 
+// NewDefaultSigningContext is for creating a default signing context.
 func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
 	return &SigningContext{
 		Hash:          crypto.SHA256,
 		KeyStore:      ks,
-		IdAttribute:   DefaultIdAttr,
+		IDAttribute:   DefaultIDAttr,
 		Prefix:        DefaultPrefix,
 		Canonicalizer: MakeC14N11Canonicalizer(),
 	}
 }
 
+// NewKYCSigningContext creates a new context for KYC signging
+func NewKYCSigningContext(ks X509KeyStore) *SigningContext {
+	return &SigningContext{
+		Hash:          crypto.SHA1,
+		KeyStore:      ks,
+		IDAttribute:   KYCIDAttr,
+		Prefix:        EmptyPrefix,
+		Canonicalizer: MakeC14N10RecCanonicalizer(),
+	}
+}
+
+// SetSignatureMethod to set signature method.
 func (ctx *SigningContext) SetSignatureMethod(algorithmID string) error {
 	hash, ok := signatureMethodsByIdentifier[algorithmID]
 	if !ok {
@@ -44,6 +59,7 @@ func (ctx *SigningContext) SetSignatureMethod(algorithmID string) error {
 	return nil
 }
 
+// digest will create digest of the signature.
 func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
 	canonical, err := ctx.Canonicalizer.Canonicalize(el)
 	if err != nil {
@@ -59,6 +75,7 @@ func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
 	return hash.Sum(nil), nil
 }
 
+// constructSignedInfo will create etree nodes for signed info tag.
 func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool) (*etree.Element, error) {
 	digestAlgorithmIdentifier := ctx.GetDigestAlgorithmIdentifier()
 	if digestAlgorithmIdentifier == "" {
@@ -91,12 +108,12 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 	// /SignedInfo/Reference
 	reference := ctx.createNamespacedElement(signedInfo, ReferenceTag)
 
-	dataId := el.SelectAttrValue(ctx.IdAttribute, "")
-	if dataId == "" {
+	dataID := el.SelectAttrValue(ctx.IDAttribute, "")
+	if dataID == "" {
 		return nil, errors.New("Missing data ID")
 	}
 
-	reference.CreateAttr(URIAttr, "#"+dataId)
+	reference.CreateAttr(URIAttr, "#"+dataID)
 
 	// // /SignedInfo/Reference/Transforms
 	// transforms := ctx.createNamespacedElement(reference, TransformsTag)
@@ -118,6 +135,7 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 	return signedInfo, nil
 }
 
+// ConstructSignature will construct etree nodes for signature.
 func (ctx *SigningContext) ConstructSignature(el *etree.Element, enveloped bool) (*etree.Element, error) {
 	signedInfo, err := ctx.constructSignedInfo(el, enveloped)
 	if err != nil {
@@ -178,14 +196,6 @@ func (ctx *SigningContext) ConstructSignature(el *etree.Element, enveloped bool)
 		return nil, err
 	}
 
-	// certs := [][]byte{cert}
-	// if cs, ok := ctx.KeyStore.(X509ChainStore); ok {
-	// 	certs, err = cs.GetChain()
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// }
-
 	rawSignature, err := rsa.SignPKCS1v15(rand.Reader, key, ctx.Hash, digest)
 	if err != nil {
 		return nil, err
@@ -197,20 +207,13 @@ func (ctx *SigningContext) ConstructSignature(el *etree.Element, enveloped bool)
 	keyInfo := ctx.createNamespacedElement(sig, KeyInfoTag)
 	x509Data := ctx.createNamespacedElement(keyInfo, X509DataTag)
 
-	x509Certs, err := x509.ParseCertificates(cert)
-	if err != nil {
-		return nil, err
+	x509Certificate := ctx.createNamespacedElement(x509Data, X509CertificateTag)
+	sub := cert.Subject.String()
+	if sub != "" {
+		x509Subject := ctx.createNamespacedElement(x509Data, X509SubjectNameTag)
+		x509Subject.SetText(sub)
 	}
-	for _, cert := range x509Certs {
-
-		x509Certificate := ctx.createNamespacedElement(x509Data, X509CertificateTag)
-		sub := cert.Subject.String()
-		if sub != "" {
-			x509Subject := ctx.createNamespacedElement(x509Data, X509SubjectNameTag)
-			x509Subject.SetText(sub)
-		}
-		x509Certificate.SetText(base64.StdEncoding.EncodeToString(cert.Raw))
-	}
+	x509Certificate.SetText(base64.StdEncoding.EncodeToString(cert.Raw))
 
 	return sig, nil
 }
@@ -221,6 +224,7 @@ func (ctx *SigningContext) createNamespacedElement(el *etree.Element, tag string
 	return child
 }
 
+// SignEnveloped creates etree element for envelope.
 func (ctx *SigningContext) SignEnveloped(el *etree.Element) (*etree.Element, error) {
 	sig, err := ctx.ConstructSignature(el, true)
 	if err != nil {
@@ -233,6 +237,7 @@ func (ctx *SigningContext) SignEnveloped(el *etree.Element) (*etree.Element, err
 	return ret, nil
 }
 
+// GetSignatureMethodIdentifier returns identifier string.
 func (ctx *SigningContext) GetSignatureMethodIdentifier() string {
 	if ident, ok := signatureMethodIdentifiers[ctx.Hash]; ok {
 		return ident
@@ -240,6 +245,7 @@ func (ctx *SigningContext) GetSignatureMethodIdentifier() string {
 	return ""
 }
 
+// GetDigestAlgorithmIdentifier returns digest identifier.
 func (ctx *SigningContext) GetDigestAlgorithmIdentifier() string {
 	if ident, ok := digestAlgorithmIdentifiers[ctx.Hash]; ok {
 		return ident
@@ -247,7 +253,7 @@ func (ctx *SigningContext) GetDigestAlgorithmIdentifier() string {
 	return ""
 }
 
-// Useful for signing query string (including DEFLATED AuthnRequest) when
+// SignString is useful for signing query string (including DEFLATED AuthnRequest) when
 // using HTTP-Redirect to make a signed request.
 // See 3.4.4.1 DEFLATE Encoding of https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
 func (ctx *SigningContext) SignString(content string) ([]byte, error) {

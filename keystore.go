@@ -8,35 +8,47 @@ import (
 	"time"
 )
 
+// X509KeyStore is elemetary type. This package can be leveraged by implimenting GetKeyPair method.
 type X509KeyStore interface {
-	GetKeyPair() (privateKey *rsa.PrivateKey, cert []byte, err error)
+	GetKeyPair() (privateKey *rsa.PrivateKey, cert *x509.Certificate, err error)
 }
 
+// X509ChainStore interface.
 type X509ChainStore interface {
-	GetChain() (certs [][]byte, err error)
+	GetChain() (certs []*x509.Certificate, err error)
 }
 
+// X509CertificateStore interface.
 type X509CertificateStore interface {
 	Certificates() (roots []*x509.Certificate, err error)
 }
 
+// MemoryX509CertificateStore interface.
 type MemoryX509CertificateStore struct {
 	Roots []*x509.Certificate
 }
 
+// Certificates retruns list of certificates.
 func (mX509cs *MemoryX509CertificateStore) Certificates() ([]*x509.Certificate, error) {
 	return mX509cs.Roots, nil
 }
 
+// MemoryX509KeyStore used for testing and all.
 type MemoryX509KeyStore struct {
 	privateKey *rsa.PrivateKey
 	cert       []byte
 }
 
-func (ks *MemoryX509KeyStore) GetKeyPair() (*rsa.PrivateKey, []byte, error) {
-	return ks.privateKey, ks.cert, nil
+// GetKeyPair implimenting X509KeyStore interface.
+func (ks *MemoryX509KeyStore) GetKeyPair() (*rsa.PrivateKey, *x509.Certificate, error) {
+	cert, err := x509.ParseCertificate(ks.cert)
+	if err != nil {
+		return nil, nil, err
+	}
+	return ks.privateKey, cert, nil
 }
 
+// RandomKeyStoreForTest is for generating test key.
 func RandomKeyStoreForTest() X509KeyStore {
 	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {
