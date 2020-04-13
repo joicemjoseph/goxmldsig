@@ -196,6 +196,7 @@ func (ctx *SigningContext) ConstructSignature(el *etree.Element, enveloped bool)
 
 	keyInfo := ctx.createNamespacedElement(sig, KeyInfoTag)
 	x509Data := ctx.createNamespacedElement(keyInfo, X509DataTag)
+
 	x509Certs, err := x509.ParseCertificates(cert)
 	if err != nil {
 		return nil, err

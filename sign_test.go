@@ -64,9 +64,9 @@ func TestSign(t *testing.T) {
 	// transformElement := transformsElement.FindElement("//" + TransformTag)
 	// require.NotEmpty(t, transformElement)
 
-	// algorithmAttr := transformElement.SelectAttr(AlgorithmAttr)
-	// require.NotEmpty(t, algorithmAttr)
-	// require.Equal(t, EnvelopedSignatureAltorithmId.String(), algorithmAttr.Value)
+	algorithmAttr := transformElement.SelectAttr(AlgorithmAttr)
+	require.NotEmpty(t, algorithmAttr)
+	require.Equal(t, EnvelopedSignatureAltorithmId.String(), algorithmAttr.Value)
 
 	digestMethodElement := referenceElement.FindElement("//" + DigestMethodTag)
 	require.NotEmpty(t, digestMethodElement)
