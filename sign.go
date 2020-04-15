@@ -116,13 +116,13 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 	reference.CreateAttr(URIAttr, "#"+dataID)
 
 	// // /SignedInfo/Reference/Transforms
-	// transforms := ctx.createNamespacedElement(reference, TransformsTag)
-	// if enveloped {
-	// 	envelopedTransform := ctx.createNamespacedElement(transforms, TransformTag)
-	// 	envelopedTransform.CreateAttr(AlgorithmAttr, EnvelopedSignatureAltorithmId.String())
-	// }
-	// canonicalizationAlgorithm := ctx.createNamespacedElement(transforms, TransformTag)
-	// canonicalizationAlgorithm.CreateAttr(AlgorithmAttr, string(ctx.Canonicalizer.Algorithm()))
+	transforms := ctx.createNamespacedElement(reference, TransformsTag)
+	if enveloped {
+		envelopedTransform := ctx.createNamespacedElement(transforms, TransformTag)
+		envelopedTransform.CreateAttr(AlgorithmAttr, EnvelopedSignatureAltorithmID.String())
+	}
+	canonicalizationAlgorithm := ctx.createNamespacedElement(transforms, TransformTag)
+	canonicalizationAlgorithm.CreateAttr(AlgorithmAttr, string(ctx.Canonicalizer.Algorithm()))
 
 	// /SignedInfo/Reference/DigestMethod
 	digestMethod := ctx.createNamespacedElement(reference, DigestMethodTag)
