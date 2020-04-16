@@ -167,9 +167,30 @@ func (ctx *ValidationContext) transform(
 	}
 
 	if canonicalizer == nil {
-		return nil, nil, errors.New("Expected canonicalization transform")
-	}
+		// If canonicalizer is empty, Instead of sending an error,
+		// return canonicalizer based on CanonicalizationMethod from SignedInfo.
+		algo := sig.SignedInfo.CanonicalizationMethod.Algorithm
 
+		switch AlgorithmID(algo) {
+		case CanonicalXML10ExclusiveAlgorithmID:
+			// CanonicalXML10ExclusiveAlgorithmID with empty prefix list.
+			var prefixList = ""
+
+			canonicalizer = MakeC14N10ExclusiveCanonicalizerWithPrefixList(prefixList)
+
+		case CanonicalXML11AlgorithmID:
+			canonicalizer = MakeC14N11Canonicalizer()
+
+		case CanonicalXML10RecAlgorithmID:
+			canonicalizer = MakeC14N10RecCanonicalizer()
+
+		case CanonicalXML10CommentAlgorithmID:
+			canonicalizer = MakeC14N10CommentCanonicalizer()
+
+		default:
+			return nil, nil, errors.New("Expected canonicalization transform")
+		}
+	}
 	return el, canonicalizer, nil
 }
 
