@@ -28,6 +28,7 @@ type ValidationContext struct {
 	CertificateStore X509CertificateStore
 	IDAttribute      string
 	Clock            *Clock
+	ShouldSearchID   bool
 }
 
 // NewDefaultValidationContext will create a new context for validation.
@@ -35,6 +36,15 @@ func NewDefaultValidationContext(certificateStore X509CertificateStore) *Validat
 	return &ValidationContext{
 		CertificateStore: certificateStore,
 		IDAttribute:      DefaultIDAttr,
+		ShouldSearchID:   true,
+	}
+}
+
+// NewKYCValidationContext is for validating KYC docs
+func NewKYCValidationContext(certificateStore X509CertificateStore) *ValidationContext {
+	return &ValidationContext{
+		CertificateStore: certificateStore,
+		ShouldSearchID:   false,
 	}
 }
 
@@ -235,17 +245,21 @@ func (ctx *ValidationContext) verifySignedInfo(sig *types.Signature, canonicaliz
 
 func (ctx *ValidationContext) validateSignature(el *etree.Element, sig *types.Signature, cert *x509.Certificate) (*etree.Element, error) {
 	idAttr := el.SelectAttr(ctx.IDAttribute)
-	if idAttr == nil || idAttr.Value == "" {
+	if ctx.ShouldSearchID && (idAttr == nil || idAttr.Value == "") {
 		return nil, errors.New("Missing ID attribute")
 	}
 
 	var ref *types.Reference
 
 	// Find the first reference which references the top-level element
-	for _, _ref := range sig.SignedInfo.References {
-		if _ref.URI == "" || _ref.URI[1:] == idAttr.Value {
-			ref = &_ref
+	if ctx.ShouldSearchID {
+		for _, _ref := range sig.SignedInfo.References {
+			if _ref.URI == "" || _ref.URI[1:] == idAttr.Value {
+				ref = &_ref
+			}
 		}
+	} else {
+		ref = &sig.SignedInfo.References[0]
 	}
 
 	// Perform all transformations listed in the 'SignedInfo'
@@ -300,7 +314,7 @@ func contains(roots []*x509.Certificate, cert *x509.Certificate) bool {
 // findSignature searches for a Signature element referencing the passed root element.
 func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature, error) {
 	idAttr := el.SelectAttr(ctx.IDAttribute)
-	if idAttr == nil || idAttr.Value == "" {
+	if ctx.ShouldSearchID && (idAttr == nil || idAttr.Value == "") {
 		return nil, errors.New("Missing ID attribute")
 	}
 
@@ -378,6 +392,10 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 			return err
 		}
 
+		if idAttr == nil {
+			sig = _sig
+			return nil
+		}
 		// Traverse references in the signature to determine whether it has at least
 		// one reference to the top level element. If so, conclude the search.
 		for _, ref := range _sig.SignedInfo.References {
