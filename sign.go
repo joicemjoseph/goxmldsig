@@ -20,7 +20,6 @@ import (
 type SigningContext struct {
 	Hash          crypto.Hash
 	KeyStore      X509KeyStore
-	IDAttribute   string
 	Prefix        string
 	Canonicalizer Canonicalizer
 }
@@ -30,7 +29,6 @@ func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
 	return &SigningContext{
 		Hash:          crypto.SHA256,
 		KeyStore:      ks,
-		IDAttribute:   DefaultIDAttr,
 		Prefix:        DefaultPrefix,
 		Canonicalizer: MakeC14N11Canonicalizer(),
 	}
@@ -41,7 +39,6 @@ func NewKYCSigningContext(ks X509KeyStore) *SigningContext {
 	return &SigningContext{
 		Hash:          crypto.SHA1,
 		KeyStore:      ks,
-		IDAttribute:   KYCIDAttr,
 		Prefix:        EmptyPrefix,
 		Canonicalizer: MakeC14N10RecCanonicalizer(),
 	}
@@ -108,12 +105,12 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 	// /SignedInfo/Reference
 	reference := ctx.createNamespacedElement(signedInfo, ReferenceTag)
 
-	dataID := el.SelectAttrValue(ctx.IDAttribute, "")
-	if dataID == "" {
-		return nil, errors.New("Missing data ID")
-	}
+	// dataID := el.SelectAttrValue(ctx.IDAttribute, "")
+	// if dataID == "" {
+	// 	return nil, errors.New("Missing data ID")
+	// }
 
-	reference.CreateAttr(URIAttr, "#"+dataID)
+	// reference.CreateAttr(URIAttr, "#"+dataID)
 
 	// // /SignedInfo/Reference/Transforms
 	transforms := ctx.createNamespacedElement(reference, TransformsTag)

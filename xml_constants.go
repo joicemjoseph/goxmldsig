@@ -35,10 +35,6 @@ const (
 	AlgorithmAttr = "Algorithm"
 	// URIAttr is URIAttribute.
 	URIAttr = "URI"
-	// KYCIDAttr is DefaultIdAttribute.
-	KYCIDAttr = "Id"
-	// DefaultIDAttr is DefaultIDAttribute.
-	DefaultIDAttr = "ID"
 	// PrefixListAttr is PrefixListAttribute.
 	PrefixListAttr = "PrefixList"
 )

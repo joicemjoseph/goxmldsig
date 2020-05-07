@@ -83,10 +83,9 @@ func TestSign(t *testing.T) {
 func TestSignErrors(t *testing.T) {
 	randomKeyStore := RandomKeyStoreForTest()
 	ctx := &SigningContext{
-		Hash:        crypto.SHA512_256,
-		KeyStore:    randomKeyStore,
-		IDAttribute: DefaultIDAttr,
-		Prefix:      DefaultPrefix,
+		Hash:     crypto.SHA512_256,
+		KeyStore: randomKeyStore,
+		Prefix:   DefaultPrefix,
 	}
 
 	authnRequest := &etree.Element{
@@ -116,7 +115,6 @@ func TestSignNonDefaultID(t *testing.T) {
 	ctx := &SigningContext{
 		Hash:          crypto.SHA256,
 		KeyStore:      ks,
-		IDAttribute:   "OtherID",
 		Prefix:        DefaultPrefix,
 		Canonicalizer: MakeC14N11Canonicalizer(),
 	}
